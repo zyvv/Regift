@@ -83,7 +83,7 @@ public struct Regift {
         loopCount: Int = 0,
         size: CGSize? = nil,
         progress: ProgressHandler? = nil,
-        completion: (_ result: URL?) -> Void) {
+        completion: (_ result: Result<URL, RegiftError>) -> Void) {
             let gift = Regift(
                 sourceFileURL: sourceFileURL,
                 destinationFileURL: destinationFileURL,
@@ -119,7 +119,7 @@ public struct Regift {
         loopCount: Int = 0,
         size: CGSize? = nil,
         progress: ProgressHandler? = nil,
-        completion: (_ result: URL?) -> Void) {
+        completion: (_ result: Result<URL, RegiftError>) -> Void) {
             let gift = Regift(
                 sourceFileURL: sourceFileURL,
                 destinationFileURL: destinationFileURL,
@@ -141,7 +141,7 @@ public struct Regift {
         duration: Float,
         frameRate: Int,
         loopCount: Int = 0,
-        completion: (_ result: URL?) -> Void) {
+        completion: (_ result: Result<URL, RegiftError>) -> Void) {
 
         let gift = Regift(
             asset: asset,
@@ -154,9 +154,10 @@ public struct Regift {
         
         completion(gift.createGif())
     }
-
+    
+    
+    
     private struct Constants {
-        static let FileName = "regift.gif"
         static let TimeInterval: Int32 = 600
         static let Tolerance = 0.01
     }
@@ -265,14 +266,13 @@ public struct Regift {
         self.size = size
         self.progress = progress
     }
-
+    
     /**
         Get the URL of the GIF created with the attributes provided in the initializer.
 
         - returns: The path to the created GIF, or `nil` if there was an error creating it.
     */
-    public func createGif() -> URL? {
-
+    public func createGif() throws -> URL {
         let fileProperties = [kCGImagePropertyGIFDictionary as String:[
             kCGImagePropertyGIFLoopCount as String: NSNumber(value: Int32(loopCount) as Int32)],
             kCGImagePropertyGIFHasGlobalColorMap as String: NSValue(nonretainedObject: true)
@@ -296,12 +296,15 @@ public struct Regift {
             
             timePoints.append(time)
         }
-        
-        do {
-            return try createGIFForTimePoints(timePoints, fileProperties: fileProperties as [String : AnyObject], frameProperties: frameProperties as [String : AnyObject], frameCount: frameCount, size: size)
             
+        return try createGIFForTimePoints(timePoints, fileProperties: fileProperties as [String : AnyObject], frameProperties: frameProperties as [String : AnyObject], frameCount: frameCount, size: size)
+    }
+
+    public func createGif() -> Result<URL, RegiftError> {
+        do {
+            return .success(try createGif())
         } catch {
-            return nil
+            return .failure(error as! RegiftError)
         }
     }
 
@@ -327,7 +330,8 @@ public struct Regift {
         if self.destinationFileURL != nil {
             fileURL = self.destinationFileURL
         } else {
-            let temporaryFile = (NSTemporaryDirectory() as NSString).appendingPathComponent(Constants.FileName)
+            let fileName = "regift\(Date().timeIntervalSince1970).gif"
+            let temporaryFile = (NSTemporaryDirectory() as NSString).appendingPathComponent(fileName)
             fileURL = URL(fileURLWithPath: temporaryFile)
         }
         
