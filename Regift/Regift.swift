@@ -141,6 +141,7 @@ public struct Regift {
         duration: Float,
         frameRate: Int,
         loopCount: Int = 0,
+        size: CGSize? = nil,
         completion: (_ result: Result<URL, RegiftError>) -> Void) {
 
         let gift = Regift(
@@ -149,7 +150,8 @@ public struct Regift {
             startTime: startTime,
             duration: duration,
             frameRate: frameRate,
-            loopCount: loopCount
+            loopCount: loopCount,
+            size: size
         )
         
         completion(gift.createGif())
